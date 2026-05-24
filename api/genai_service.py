@@ -33,7 +33,7 @@ def extract_food_preference(user_text: str) -> List[str]:
     
     try:
         response = client.models.generate_content(
-            model='gemini-1.5-flash',
+            model='gemini-2.5-flash',
             contents=prompt,
         )
         text = response.text.strip()
@@ -64,7 +64,7 @@ def generate_narrative(user_text: str, recommended_food: str, portion: float, ta
     
     try:
         response = client.models.generate_content(
-            model='gemini-1.5-flash',
+            model='gemini-2.5-flash',
             contents=prompt,
         )
         return response.text.strip()
