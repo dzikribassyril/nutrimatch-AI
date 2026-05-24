@@ -22,8 +22,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy seluruh file proyek (api, Data, model .keras) ke dalam container
 COPY . .
 
+# Pindah ke dalam folder api agar import Python (seperti 'from schemas import...') berfungsi persis seperti di lokal
+WORKDIR /app/api
+
 # Ekspos port 8000 yang akan digunakan oleh FastAPI
 EXPOSE 8000
 
-# Jalankan server FastAPI
-CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Jalankan server FastAPI dari dalam folder api
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
