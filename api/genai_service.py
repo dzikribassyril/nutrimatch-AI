@@ -1,17 +1,16 @@
 import os
-import google.generativeai as genai
 from typing import List
 
+# Import the new SDK
+from google import genai
+
 # Setup Gemini API Key
-# Normally, you would use os.getenv("GEMINI_API_KEY")
-# For this MVP, if it's not set, we'll try to handle it gracefully or mock it.
 API_KEY = os.getenv("GEMINI_API_KEY", "") 
 
 if API_KEY:
-    genai.configure(api_key=API_KEY)
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    client = genai.Client(api_key=API_KEY)
 else:
-    model = None
+    client = None
     print("Warning: GEMINI_API_KEY not found in environment. GenAI features will run in Mock Mode.")
 
 def extract_food_preference(user_text: str) -> List[str]:
@@ -19,7 +18,7 @@ def extract_food_preference(user_text: str) -> List[str]:
     Uses Gemini to extract keywords (ingredients, category, taste) from natural language.
     Returns a list of keywords.
     """
-    if not model or not user_text:
+    if not client or not user_text:
         return []
         
     prompt = f"""
@@ -33,7 +32,10 @@ def extract_food_preference(user_text: str) -> List[str]:
     """
     
     try:
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(
+            model='gemini-1.5-flash',
+            contents=prompt,
+        )
         text = response.text.strip()
         if text:
             return [kw.strip() for kw in text.split(',') if kw.strip()]
@@ -46,7 +48,7 @@ def generate_narrative(user_text: str, recommended_food: str, portion: float, ta
     """
     Uses Gemini to craft a friendly response explaining the recommendation.
     """
-    if not model:
+    if not client:
         # Mock Response
         return f"Kami merekomendasikan {recommended_food} ({portion:.0f} gram) untuk memenuhi target {target_cal:.0f} kalori Anda."
 
@@ -61,7 +63,10 @@ def generate_narrative(user_text: str, recommended_food: str, portion: float, ta
     """
     
     try:
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(
+            model='gemini-1.5-flash',
+            contents=prompt,
+        )
         return response.text.strip()
     except Exception as e:
         print(f"GenAI Narrative Error: {e}")
