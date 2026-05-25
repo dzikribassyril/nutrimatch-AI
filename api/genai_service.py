@@ -13,22 +13,28 @@ else:
     client = None
     print("Warning: GEMINI_API_KEY not found in environment. GenAI features will run in Mock Mode.")
 
-def extract_food_preference(user_text: str) -> List[str]:
+import json
+from schemas import ExtractedPreferences
+
+def extract_food_preference(user_text: str) -> ExtractedPreferences:
     """
-    Uses Gemini to extract keywords (ingredients, category, taste) from natural language.
-    Returns a list of keywords.
+    Uses Gemini to extract keywords and target meal from natural language.
+    Returns an ExtractedPreferences object.
     """
     if not client or not user_text:
-        return []
+        return ExtractedPreferences(keywords=[], target_meal=None)
         
     prompt = f"""
     Kamu adalah asisten nutrisi. Ekstrak KATA KUNCI bahan makanan, kategori (misal: sup, mie, nasi), 
-    atau rasa dari kalimat berikut.
+    atau rasa dari kalimat berikut. Selain itu, tentukan apakah pengguna menargetkan waktu makan tertentu (Sarapan, Makan Siang, Makan Malam).
+    
     Kalimat: "{user_text}"
     
-    Keluarkan hanya keywordnya saja, dipisahkan dengan koma (tanpa penjelasan tambahan).
-    Jika tidak ada keyword makanan, kembalikan kosong.
-    Contoh output: ayam, pedas, berkuah
+    Keluarkan hasil HANYA dalam format JSON yang valid persis seperti ini tanpa blok markdown atau teks tambahan:
+    {{
+        "keywords": ["ayam", "pedas", "berkuah"],
+        "target_meal": "Makan Siang" // isi dengan "Sarapan", "Makan Siang", "Makan Malam", atau null jika tidak spesifik
+    }}
     """
     
     try:
@@ -37,12 +43,20 @@ def extract_food_preference(user_text: str) -> List[str]:
             contents=prompt,
         )
         text = response.text.strip()
-        if text:
-            return [kw.strip() for kw in text.split(',') if kw.strip()]
-        return []
+        # Bersihkan format markdown jika Gemini masih menambahkannya
+        if text.startswith("```json"):
+            text = text.replace("```json", "").replace("```", "").strip()
+        elif text.startswith("```"):
+            text = text.replace("```", "").strip()
+            
+        data = json.loads(text)
+        return ExtractedPreferences(
+            keywords=data.get("keywords", []),
+            target_meal=data.get("target_meal")
+        )
     except Exception as e:
         print(f"GenAI Extraction Error: {e}")
-        return []
+        return ExtractedPreferences(keywords=[], target_meal=None)
 
 def generate_narrative(user_text: str, recommended_food: str, portion: float, target_cal: float) -> str:
     """

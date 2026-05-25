@@ -1,6 +1,10 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional
 
+class ExtractedPreferences(BaseModel):
+    keywords: List[str] = Field(default=[], description="Extracted keywords from user text")
+    target_meal: Optional[str] = Field(default=None, description="Specific meal target: Sarapan, Makan Siang, or Makan Malam")
+
 class MacroTarget(BaseModel):
     calories: float = Field(..., example=1800.0)
     protein_g: float = Field(..., example=100.0)
@@ -31,7 +35,7 @@ class RecommendRequest(BaseModel):
     dinner_prefs: Optional[MealPreferences] = None
     
     # Preference Method 2: Natural Language (Processed by Gen AI)
-    user_text: Optional[str] = Field(default=None, example="Saya mau makan yang berkuah pedas dan ada ayamnya")
+    user_text: Optional[str] = Field(default=None, example="Saya mau makan yang berkuah dan ada ayamnya di siang hari")
 
 class FoodRecommendation(BaseModel):
     food_name: str

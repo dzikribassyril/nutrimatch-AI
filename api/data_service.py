@@ -16,11 +16,11 @@ except Exception as e:
 def get_food_data():
     return food_df
 
-def filter_foods_by_preferences(categories: list, ingredients: list, dataset: pd.DataFrame) -> pd.DataFrame:
+def filter_foods_by_preferences(categories: list, ingredients: list, target_meal: str, dataset: pd.DataFrame) -> pd.DataFrame:
     """
     TODO for Data Science Team:
-    Once the 'food_category' and 'main_ingredient' columns are added to train_ready_dataset.csv, 
-    uncomment the logic below to perform precise filtering!
+    Once the 'food_category', 'main_ingredient', and 'main_meals' columns are added 
+    to train_ready_dataset.csv, uncomment the logic below to perform precise filtering!
     """
     
     # === FUTURE LOGIC (COMMENTED OUT FOR NOW) ===
@@ -33,11 +33,16 @@ def filter_foods_by_preferences(categories: list, ingredients: list, dataset: pd
     # if ingredients:
     #     ing_lower = [i.lower() for i in ingredients]
     #     filtered_df = filtered_df[filtered_df['main_ingredient'].str.lower().isin(ing_lower)]
+    #
+    # if target_meal:
+    #     # Asumsi kolom 'main_meals' bisa multi-class, misal "Sarapan, Makan Siang"
+    #     filtered_df = filtered_df[filtered_df['main_meals'].str.contains(target_meal, case=False, na=False)]
     # 
     # return filtered_df
     
     # === CURRENT FALLBACK LOGIC (MVP) ===
     # Combine both lists and do a substring search on the food name
+    # We ignore target_meal in fallback because there is no column for it yet.
     all_keywords = categories + ingredients
     if not all_keywords:
         return dataset

@@ -17,12 +17,14 @@ def read_root():
 @app.post("/api/recommend", response_model=RecommendResponse)
 def recommend_food(req: RecommendRequest):
     # 1. Gen AI Parsing (if user_text is provided)
-    # Gen AI parsing
     extracted_keywords = []
+    target_meal_from_ai = None
     if req.user_text:
-        extracted_keywords = genai_service.extract_food_preference(req.user_text)
+        extracted_prefs = genai_service.extract_food_preference(req.user_text)
+        extracted_keywords = extracted_prefs.keywords
+        target_meal_from_ai = extracted_prefs.target_meal
         
-    print(f"Gen AI Extracted: {extracted_keywords}")
+    print(f"Gen AI Extracted: Keywords={extracted_keywords}, Target Meal={target_meal_from_ai}")
     
     # 2. Check Database
     food_df = data_service.get_food_data()
@@ -66,11 +68,23 @@ def recommend_food(req: RecommendRequest):
         
         # === APLIKASIKAN PREFERENSI SPESIFIK WAKTU MAKAN ===
         cats = prefs.food_category if prefs else []
-        ings = (prefs.main_ingredients if prefs else []) + extracted_keywords
+        ings = prefs.main_ingredients if prefs else []
+        
+        # Jika AI mendeteksi waktu makan (misal "Makan Siang"), terapkan keyword hanya untuk sesi tersebut
+        apply_ai_keywords = True
+        if target_meal_from_ai and target_meal_from_ai.lower() not in meal_name.lower():
+            apply_ai_keywords = False
+            
+        if apply_ai_keywords:
+            ings = ings + extracted_keywords
+            
+        # Ambil nama bersih waktu makan (misal "Makan Siang") untuk DS logic
+        clean_meal_name = meal_name.split(' (')[0]
         
         meal_specific_df = data_service.filter_foods_by_preferences(
             categories=cats, 
             ingredients=ings, 
+            target_meal=clean_meal_name,
             dataset=food_df
         )
         
