@@ -18,13 +18,15 @@ def read_root():
 def recommend_food(req: RecommendRequest):
     # 1. Gen AI Parsing (if user_text is provided)
     extracted_keywords = []
+    negative_keywords = []
     target_meal_from_ai = None
     if req.user_text:
         extracted_prefs = genai_service.extract_food_preference(req.user_text)
         extracted_keywords = extracted_prefs.keywords
+        negative_keywords = extracted_prefs.negative_keywords
         target_meal_from_ai = extracted_prefs.target_meal
         
-    print(f"Gen AI Extracted: Keywords={extracted_keywords}, Target Meal={target_meal_from_ai}")
+    print(f"Gen AI Extracted: Keywords={extracted_keywords}, Negatives={negative_keywords}, Target Meal={target_meal_from_ai}")
     
     # 2. Check Database
     food_df = data_service.get_food_data()
@@ -85,7 +87,8 @@ def recommend_food(req: RecommendRequest):
             categories=cats, 
             ingredients=ings, 
             target_meal=clean_meal_name,
-            dataset=food_df
+            dataset=food_df,
+            negative_keywords=negative_keywords if apply_ai_keywords else []
         )
         
         # === OPSI 2: LOGIKA HEURISTIK PER WAKTU MAKAN ===

@@ -16,46 +16,54 @@ except Exception as e:
 def get_food_data():
     return food_df
 
-def filter_foods_by_preferences(categories: list, ingredients: list, target_meal: str, dataset: pd.DataFrame) -> pd.DataFrame:
+def filter_foods_by_preferences(categories: list, ingredients: list, target_meal: str, dataset: pd.DataFrame, negative_keywords: list = None) -> pd.DataFrame:
     """
-    TODO for Data Science Team:
-    Once the 'food_category', 'main_ingredient', and 'main_meals' columns are added 
-    to train_ready_dataset.csv, uncomment the logic below to perform precise filtering!
+    Filters food dataset based on precise category, main ingredient, and meal time 
+    provided by the Data Science team. Also applies negative filtering.
     """
+    filtered_df = dataset.copy()
     
-    # === FUTURE LOGIC (COMMENTED OUT FOR NOW) ===
-    # filtered_df = dataset.copy()
-    # 
-    # if categories:
-    #     cat_lower = [c.lower() for c in categories]
-    #     filtered_df = filtered_df[filtered_df['food_category'].str.lower().isin(cat_lower)]
-    #
-    # if ingredients:
-    #     ing_lower = [i.lower() for i in ingredients]
-    #     filtered_df = filtered_df[filtered_df['main_ingredient'].str.lower().isin(ing_lower)]
-    #
-    # if target_meal:
-    #     # Asumsi kolom 'main_meals' bisa multi-class, misal "Sarapan, Makan Siang"
-    #     filtered_df = filtered_df[filtered_df['main_meals'].str.contains(target_meal, case=False, na=False)]
-    # 
-    # return filtered_df
-    
-    # === CURRENT FALLBACK LOGIC (MVP) ===
-    # Combine both lists and do a substring search on the food name
-    # We ignore target_meal in fallback because there is no column for it yet.
-    all_keywords = categories + ingredients
-    if not all_keywords:
-        return dataset
+    # 0. Negative Filtering
+    if negative_keywords:
+        neg_lower = [n.lower() for n in negative_keywords]
+        for neg in neg_lower:
+            # Drop rows where food_name, food_category, or main_ingredient contains the negative word
+            filtered_df = filtered_df[
+                ~(
+                    filtered_df['food_name'].fillna('').str.lower().str.contains(neg) |
+                    filtered_df['food_category'].fillna('').str.lower().str.contains(neg) |
+                    filtered_df['main_ingredient'].fillna('').str.lower().str.contains(neg)
+                )
+            ]
+            
+    # 1. Filter by Food Category
+    if categories:
+        cat_lower = [c.lower() for c in categories]
+        filtered_df = filtered_df[filtered_df['food_category'].fillna('').str.lower().isin(cat_lower)]
         
-    all_keywords = [k.lower().strip() for k in all_keywords if k.strip()]
-    
-    mask = dataset['food_name_clean'].apply(
-        lambda name: any(kw in str(name).lower() for kw in all_keywords)
-    )
-    
-    filtered_df = dataset[mask].copy()
+    # 2. Filter by Main Ingredient
+    if ingredients:
+        ing_lower = [i.lower() for i in ingredients]
+        filtered_df = filtered_df[filtered_df['main_ingredient'].fillna('').str.lower().isin(ing_lower)]
+        
+    # 3. Filter by Meal Time using DS Boolean Flags
+    if target_meal:
+        target_meal_lower = target_meal.lower()
+        # Jika DF menjadi kosong setelah filter meal, kita lewati agar tidak error (fallback)
+        meal_filtered = None
+        if "sarapan" in target_meal_lower:
+            meal_filtered = filtered_df[filtered_df['suitable_breakfast'] == True]
+        elif "siang" in target_meal_lower:
+            meal_filtered = filtered_df[filtered_df['suitable_lunch'] == True]
+        elif "malam" in target_meal_lower:
+            meal_filtered = filtered_df[filtered_df['suitable_dinner'] == True]
+            
+        if meal_filtered is not None and not meal_filtered.empty:
+            filtered_df = meal_filtered
+            
+    # 4. Fallback jika filter terlalu ketat hingga kosong
     if filtered_df.empty:
-        print(f"Warning: No foods found matching {all_keywords}. Falling back to full dataset.")
+        print(f"Warning: No foods found for prefs (cat={categories}, ing={ingredients}, meal={target_meal}). Falling back to full dataset.")
         return dataset
         
     return filtered_df

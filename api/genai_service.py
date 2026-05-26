@@ -17,26 +17,28 @@ import json
 from schemas import ExtractedPreferences
 
 def extract_food_preference(user_text: str) -> ExtractedPreferences:
-    """
-    Uses Gemini to extract keywords and target meal from natural language.
-    Returns an ExtractedPreferences object.
-    """
-    if not client or not user_text:
-        return ExtractedPreferences(keywords=[], target_meal=None)
-        
+    """Uses GenAI to extract keywords, negative keywords, and target meal times."""
+    
     prompt = f"""
-    Kamu adalah asisten nutrisi. Ekstrak KATA KUNCI bahan makanan, kategori (misal: sup, mie, nasi), 
-    atau rasa dari kalimat berikut. Selain itu, tentukan apakah pengguna menargetkan waktu makan tertentu (Sarapan, Makan Siang, Makan Malam).
-    
-    Kalimat: "{user_text}"
-    
-    Keluarkan hasil HANYA dalam format JSON yang valid persis seperti ini tanpa blok markdown atau teks tambahan:
+    Ekstrak informasi dari teks pengguna mengenai preferensi makanan.
+    Fokus pada:
+    1. keywords: jenis makanan utama, bahan dasar, atau kategori yang diinginkan (misal: "ayam", "berkuah", "pedas").
+    2. negative_keywords: jenis makanan atau bahan yang TIDAK diinginkan atau dilarang (misal kata kunci setelah kata "jangan", "tanpa", "bukan", contoh: "goreng", "santan"). Selalu gunakan kata dasar (misal: "digoreng" menjadi "goreng", "direbus" menjadi "rebus").
+    3. target_meal: Jika ada penyebutan waktu makan yang spesifik, pilih dari: "Sarapan", "Makan Siang", "Makan Malam". Jika tidak ada, biarkan null.
+
+    Kembalikan HANYA format JSON berikut, tanpa markdown, tanpa teks lain:
     {{
-        "keywords": ["ayam", "pedas", "berkuah"],
-        "target_meal": "Makan Siang" // isi dengan "Sarapan", "Makan Siang", "Makan Malam", atau null jika tidak spesifik
+        "keywords": ["kata1", "kata2"],
+        "negative_keywords": ["kata3", "kata4"],
+        "target_meal": "Makan Siang"
     }}
+
+    Teks pengguna: "{user_text}"
     """
     
+    if not client or not user_text:
+        return ExtractedPreferences(keywords=[], negative_keywords=[], target_meal=None)
+
     try:
         response = client.models.generate_content(
             model='gemini-2.5-flash',
@@ -52,11 +54,12 @@ def extract_food_preference(user_text: str) -> ExtractedPreferences:
         data = json.loads(text)
         return ExtractedPreferences(
             keywords=data.get("keywords", []),
+            negative_keywords=data.get("negative_keywords", []),
             target_meal=data.get("target_meal")
         )
     except Exception as e:
         print(f"GenAI Extraction Error: {e}")
-        return ExtractedPreferences(keywords=[], target_meal=None)
+        return ExtractedPreferences(keywords=[], negative_keywords=[], target_meal=None)
 
 def generate_narrative(user_text: str, recommended_food: str, portion: float, target_cal: float) -> str:
     """
