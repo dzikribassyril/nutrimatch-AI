@@ -2,7 +2,7 @@ import requests
 import json
 import time
 
-url = "http://127.0.0.1:8000/api/recommend"
+url = "http://127.0.0.1:8002/api/recommend"
 
 time.sleep(2)
 
@@ -35,7 +35,10 @@ payload = {
     "food_category": [],
     "main_ingredients": []
   },
-  "user_text": "Saya ingin makan ayam di siang hari TAPI JANGAN digoreng"
+  "user_text": "Saya ingin makan ayam di siang hari TAPI JANGAN digoreng",
+  "start_date": "2026-05-28",
+  "days": 7,
+  "variety_penalty": 0.15
 }
 
 headers = {
@@ -54,12 +57,25 @@ try:
         print("=== NARRATIVE SUMMARY ===")
         print(data.get("narrative_summary", ""))
         print("\n=== DAILY PLAN ===")
+        current_day = None
         for meal in data.get("daily_plan", []):
-            print(f"\n{meal['meal_name']} - Target Cal: {meal['target_calories']:.0f}")
-            if not meal['recommendations']:
-                print("  - TIDAK ADA REKOMENDASI (Filter terlalu ketat)")
-            for rec in meal['recommendations']:
-                print(f"  - {rec['food_name']} ({rec['ideal_grams']:.1f}g)")
+          name_parts = meal.get("meal_name", "").split(" - ")
+          if len(name_parts) >= 3:
+            day_title = " - ".join(name_parts[:2])
+            meal_title = name_parts[2]
+          else:
+            day_title = "Hari"
+            meal_title = meal.get("meal_name", "")
+
+          if day_title != current_day:
+            current_day = day_title
+            print(f"\n{day_title}")
+
+          print(f"  {meal_title} - Target Cal: {meal['target_calories']:.0f}")
+          if not meal['recommendations']:
+            print("    - TIDAK ADA REKOMENDASI (Filter terlalu ketat)")
+          for rec in meal['recommendations']:
+            print(f"    - {rec['food_name']} ({rec['ideal_grams']:.1f}g)")
     else:
         print("Error Response:")
         print(response.text)

@@ -51,12 +51,24 @@ def filter_foods_by_preferences(categories: list, ingredients: list, target_meal
         target_meal_lower = target_meal.lower()
         # Jika DF menjadi kosong setelah filter meal, kita lewati agar tidak error (fallback)
         meal_filtered = None
+        def _normalize_suitable(series: pd.Series) -> pd.Series:
+            return (
+                series.astype(str)
+                .str.lower()
+                .map({'true': 1, 'false': 0, '1': 1, '0': 0})
+                .fillna(0)
+                .astype(int)
+            )
+
         if "sarapan" in target_meal_lower:
-            meal_filtered = filtered_df[filtered_df['suitable_breakfast'] == True]
+            if 'suitable_breakfast' in filtered_df.columns:
+                meal_filtered = filtered_df[_normalize_suitable(filtered_df['suitable_breakfast']) == 1]
         elif "siang" in target_meal_lower:
-            meal_filtered = filtered_df[filtered_df['suitable_lunch'] == True]
+            if 'suitable_lunch' in filtered_df.columns:
+                meal_filtered = filtered_df[_normalize_suitable(filtered_df['suitable_lunch']) == 1]
         elif "malam" in target_meal_lower:
-            meal_filtered = filtered_df[filtered_df['suitable_dinner'] == True]
+            if 'suitable_dinner' in filtered_df.columns:
+                meal_filtered = filtered_df[_normalize_suitable(filtered_df['suitable_dinner']) == 1]
             
         if meal_filtered is not None and not meal_filtered.empty:
             filtered_df = meal_filtered

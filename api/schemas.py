@@ -38,6 +38,11 @@ class RecommendRequest(BaseModel):
     # Preference Method 2: Natural Language (Processed by Gen AI)
     user_text: Optional[str] = Field(default=None, example="Saya mau makan yang berkuah dan ada ayamnya di siang hari")
 
+    # Optional planning controls
+    start_date: Optional[str] = Field(default=None, example="2026-05-28")
+    days: Optional[int] = Field(default=7, example=7)
+    variety_penalty: Optional[float] = Field(default=0.15, example=0.15)
+
 class FoodRecommendation(BaseModel):
     food_name: str
     calories_100g: float
