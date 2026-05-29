@@ -7,7 +7,7 @@ import genai_service
 app = FastAPI(
     title="NutriMatch AI API",
     description="Food Recommendation API combining Deep Learning and Gen AI",
-    version="1.0.0"
+    version="1.0.1"
 )
 
 @app.get("/")
@@ -16,10 +16,10 @@ def read_root():
 
 @app.post("/api/recommend", response_model=RecommendResponse)
 def recommend_food(req: RecommendRequest):
-    # 1. Gen AI Parsing (if user_text is provided)
     extracted_keywords = []
     negative_keywords = []
     target_meal_from_ai = None
+    
     if req.user_text:
         extracted_prefs = genai_service.extract_food_preference(req.user_text)
         extracted_keywords = extracted_prefs.keywords
@@ -28,137 +28,101 @@ def recommend_food(req: RecommendRequest):
         
     print(f"Gen AI Extracted: Keywords={extracted_keywords}, Negatives={negative_keywords}, Target Meal={target_meal_from_ai}")
     
-    # 2. Check Database
     food_df = data_service.get_food_data()
     if food_df.empty:
         raise HTTPException(status_code=500, detail="Database is empty or not loaded.")
     
-    # 3. TensorFlow Recommendation prep
     user_max = data_service.get_user_max()
-    
-    # Konversi Object ke Array berurutan agar bisa dibaca model AI
-    macro_array = [
-        req.target_macros.calories, 
-        req.target_macros.protein_g, 
-        req.target_macros.fat_g, 
-        req.target_macros.carb_g
-    ]
-    
+    macro_array = [req.target_macros.calories, req.target_macros.protein_g, req.target_macros.fat_g, req.target_macros.carb_g]
     allergy_array = [
-        req.allergies.gluten, 
-        req.allergies.dairy, 
-        req.allergies.nuts, 
-        req.allergies.peanut, 
-        req.allergies.seafood, 
-        req.allergies.egg, 
-        req.allergies.soy, 
-        req.allergies.celery
+        req.allergies.gluten, req.allergies.dairy, req.allergies.nuts, req.allergies.peanut, 
+        req.allergies.seafood, req.allergies.egg, req.allergies.soy, req.allergies.celery
     ]
     
     ratios = [
-        ("Sarapan (25%)", 0.25, req.breakfast_prefs), 
-        ("Makan Siang (40%)", 0.40, req.lunch_prefs), 
-        ("Makan Malam (35%)", 0.35, req.dinner_prefs)
+        ("breakfast", "Sarapan (25%)", 0.25, req.breakfast_prefs),
+        ("lunch", "Makan Siang (40%)", 0.40, req.lunch_prefs),
+        ("dinner", "Makan Malam (35%)", 0.35, req.dinner_prefs),
     ]
-    daily_plan_response = []
-    
-    used_foods = set() # Set untuk melacak makanan yang sudah direkomendasikan
-    
-    for meal_name, ratio, prefs in ratios:
-        # Scale the macros for the specific meal
-        meal_macros = [m * ratio for m in macro_array]
-        
-        # === APLIKASIKAN PREFERENSI SPESIFIK WAKTU MAKAN ===
+
+    meal_datasets = {}
+    for meal_key, meal_label, ratio, prefs in ratios:
         cats = prefs.food_category if prefs else []
         ings = prefs.main_ingredients if prefs else []
-        
-        # Jika AI mendeteksi waktu makan (misal "Makan Siang"), terapkan keyword hanya untuk sesi tersebut
+
         apply_ai_keywords = True
-        if target_meal_from_ai and target_meal_from_ai.lower() not in meal_name.lower():
+        if target_meal_from_ai and target_meal_from_ai.lower() not in meal_label.lower():
             apply_ai_keywords = False
-            
+
         if apply_ai_keywords:
             ings = ings + extracted_keywords
-            
-        # Ambil nama bersih waktu makan (misal "Makan Siang") untuk DS logic
-        clean_meal_name = meal_name.split(' (')[0]
-        
+
+        clean_meal_name = meal_label.split(' (')[0]
         meal_specific_df = data_service.filter_foods_by_preferences(
-            categories=cats, 
-            ingredients=ings, 
-            target_meal=clean_meal_name,
-            dataset=food_df,
-            negative_keywords=negative_keywords if apply_ai_keywords else []
+            categories=cats, ingredients=ings, target_meal=clean_meal_name,
+            dataset=food_df, negative_keywords=negative_keywords if apply_ai_keywords else [],
         )
-        
-        # === OPSI 2: LOGIKA HEURISTIK PER WAKTU MAKAN ===
-        if "Sarapan" in meal_name:
-            # Sarapan: Makanan ringan/menengah (< 350 kkal per 100g)
-            mask = meal_specific_df['calories_100g'] <= 350
-            if not meal_specific_df[mask].empty:
-                meal_specific_df = meal_specific_df[mask]
-        elif "Makan Siang" in meal_name:
-            # Makan Siang: Makanan berat (> 200 kkal per 100g)
-            mask = meal_specific_df['calories_100g'] >= 200
-            if not meal_specific_df[mask].empty:
-                meal_specific_df = meal_specific_df[mask]
-        elif "Makan Malam" in meal_name:
-            # Makan Malam: Menengah (bebas, tapi hindari yang super berat > 500)
-            mask = meal_specific_df['calories_100g'] <= 500
-            if not meal_specific_df[mask].empty:
-                meal_specific_df = meal_specific_df[mask]
-        
-        # Minta lebih banyak (top 15) agar kita bisa membuang yang duplikat
-        meal_recs = ml_model.get_ai_recommendations(
-            user_macros=meal_macros,
-            user_allergies=allergy_array,
-            filtered_food_df=meal_specific_df, # Gunakan DF yang sudah di-filter khusus waktu makan
-            user_max=user_max,
-            top_k=15
-        )
-        
-        # Format the models & Enforce Variety
-        formatted_recs = []
-        for r in meal_recs:
-            if r['food_name'] not in used_foods:
-                formatted_recs.append(FoodRecommendation(
-                    food_name=r['food_name'],
-                    calories_100g=r['calories_100g'],
-                    ideal_grams=r['ideal_grams'],
-                    ideal_calories=r['ideal_calories'],
-                    match_score=r['match_score']
-                ))
-                used_foods.add(r['food_name']) # Catat agar tidak muncul di waktu makan selanjutnya
-                
-            if len(formatted_recs) == 2: # Ambil 2 menu unik terbaik per waktu makan
-                break
-            
+
+        meal_datasets[meal_key] = meal_specific_df
+
+    daily_plan_raw = ml_model.generate_7day_combo_plan(
+        daily_macros=macro_array, user_allergy_list=allergy_array,
+        meal_datasets=meal_datasets, user_max=user_max,
+        variety_penalty=req.variety_penalty if req.variety_penalty is not None else 0.20,
+        start_date=req.start_date, days=req.days if req.days is not None else 7,
+    )
+
+    daily_plan_response = []
+    for meal in daily_plan_raw:
+        formatted_recs = [
+            FoodRecommendation(
+                food_name=r['food_name'],
+                calories_100g=r['calories_100g'],
+                ideal_grams=r['ideal_grams'],
+                ideal_calories=r['ideal_calories'],
+                match_score=r['match_score'],
+            )
+            for r in meal['recommendations']
+        ]
         daily_plan_response.append({
-            "meal_name": meal_name,
-            "target_calories": meal_macros[0],
-            "recommendations": formatted_recs
+            "meal_name": meal["meal_name"],
+            "target_calories": meal["target_calories"],
+            "recommendations": formatted_recs,
         })
-    
-    if not daily_plan_response[0]["recommendations"]:
+
+    has_any_recs = any(meal["recommendations"] for meal in daily_plan_response)
+    if not has_any_recs:
         return RecommendResponse(
             daily_plan=[],
-            narrative_summary="Maaf, kami tidak menemukan makanan yang aman dengan preferensi dan alergi Anda."
+            narrative_summary="Maaf, kami tidak menemukan makanan yang aman dengan preferensi dan alergi Anda.",
         )
-        
-    # Ambil makanan terbaik dari Makan Siang untuk dijadikan bahan cerita Gen AI
-    top_lunch_food = daily_plan_response[1]["recommendations"][0]
-    
-    # 4. Gen AI Narrative Generation
+
+    # Mengambil sampel makanan paling relevan untuk diolah narasi oleh Gen AI
+    top_food_sample = None
+    for meal in daily_plan_response:
+        if "Makan Siang" in meal["meal_name"] and meal["recommendations"]:
+            top_food_sample = meal["recommendations"][0]
+            break
+
+    if top_food_sample is None:
+        for meal in daily_plan_response:
+            if meal["recommendations"]:
+                top_food_sample = meal["recommendations"][0]
+                break
+
+    # Hilangkan prefix tag [Makanan Utama]/[Karbo] saat dikirim ke GenAI
+    clean_food_name = top_food_sample.food_name.split("] ")[-1] if "] " in top_food_sample.food_name else top_food_sample.food_name
+
     narrative = genai_service.generate_narrative(
         user_text=req.user_text,
-        recommended_food=top_lunch_food.food_name,
-        portion=top_lunch_food.ideal_grams,
-        target_cal=req.target_macros.calories # Mention total daily calories
+        recommended_food=clean_food_name,
+        portion=top_food_sample.ideal_grams,
+        target_cal=req.target_macros.calories,
     )
-        
+
     return RecommendResponse(
         daily_plan=daily_plan_response,
-        narrative_summary=narrative
+        narrative_summary=narrative,
     )
 
 if __name__ == "__main__":

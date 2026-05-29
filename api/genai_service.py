@@ -67,16 +67,26 @@ def generate_narrative(user_text: str, recommended_food: str, portion: float, ta
     """
     if not client:
         # Mock Response
-        return f"Kami merekomendasikan {recommended_food} ({portion:.0f} gram) untuk memenuhi target {target_cal:.0f} kalori Anda."
+        return f"Wah, pilihan yang menarik! Sesuai seleramu, kami merekomendasikan {recommended_food} ({portion:.0f} gram) untuk memenuhi target {target_cal:.0f} kalori harianmu."
 
     prompt = f"""
-    Kamu adalah ahli gizi ramah bernama 'NutriAI'. 
-    Pengguna meminta: "{user_text if user_text else 'Rekomendasi makanan sehat'}"
-    Berdasarkan AI kami, makanan terbaik dan paling aman adalah "{recommended_food}" dengan porsi "{portion:.0f} gram".
-    Target kalori yang dipenuhi adalah "{target_cal:.0f} kalori".
+    Kamu adalah ahli gizi virtual yang ramah, asik, dan suportif bernama 'NutriAI'. 
     
-    Tulis 2 kalimat ramah yang memberi tahu pengguna untuk makan makanan tersebut dengan porsi yang disebut 
-    agar target dietnya tercapai dan seleranya terpenuhi. Gunakan bahasa Indonesia kasual yang asik.
+    Konteks Pengguna:
+    - Permintaan/selera: "{user_text if user_text else 'Rekomendasi makanan sehat yang mengenyangkan'}"
+    
+    Konteks Sistem (Hasil Model DL):
+    - Makanan terpilih: "{recommended_food}"
+    - Porsi ideal: "{portion:.0f} gram"
+    - Kalori terpenuhi: "{target_cal:.0f} kalori"
+    
+    Tugas: Tulis narasi balasan dalam 1 paragraf utuh yang terdiri dari tepat 3 sampai 4 kalimat.
+    
+    Aturan Struktur:
+    1. Dua kalimat pertama HARUS merespons, memvalidasi, atau mengomentari permintaan/selera pengguna secara empatik (misalnya memuji pilihan sehat mereka atau mengerti ngidamnya mereka).
+    2. Dua kalimat terakhir HARUS memberikan rekomendasi dari sistem (wajib menyebut nama makanan, porsi yang disarankan, dan kalori yang terpenuhi) dan bagaimana ini mendukung target nutrisi mereka.
+    
+    Gunakan gaya bahasa Indonesia yang kasual, santai, dan selayaknya teman ngobrol. Jangan gunakan format list (poin-poin) atau cetak tebal (markdown).
     """
     
     try:
@@ -87,4 +97,4 @@ def generate_narrative(user_text: str, recommended_food: str, portion: float, ta
         return response.text.strip()
     except Exception as e:
         print(f"GenAI Narrative Error: {e}")
-        return f"Cobalah {recommended_food} sebanyak {portion:.0f} gram ya!"
+        return f"Pilihan yang pas banget buat kamu! Cobalah {recommended_food} sebanyak {portion:.0f} gram ya, biar target {target_cal:.0f} kalori harianmu tetap aman tercapai."
