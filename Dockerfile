@@ -1,5 +1,5 @@
 # Gunakan Python 3.10 (Versi paling stabil untuk TensorFlow)
-FROM python:3.10-slim
+FROM python:3.11-slim
 
 # Set environment variables agar Python tidak membuat file .pyc dan tidak menahan log (unbuffered)
 ENV PYTHONDONTWRITEBYTECODE=1
