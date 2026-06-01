@@ -42,12 +42,16 @@ class RecommendRequest(BaseModel):
     start_date: Optional[str] = Field(default=None, example="2026-05-28")
     days: Optional[int] = Field(default=7, example=7)
     variety_penalty: Optional[float] = Field(default=0.15, example=0.15)
+    halal_only: Optional[bool] = Field(default=False, description="Filter hanya makanan halal candidate")
 
 class FoodRecommendation(BaseModel):
     food_name: str
     calories_100g: float
     ideal_grams: float
     ideal_calories: float
+    ideal_protein: Optional[float] = None
+    ideal_fat: Optional[float] = None
+    ideal_carb: Optional[float] = None
     match_score: float
 
 class MealRecommendations(BaseModel):

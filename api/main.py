@@ -61,6 +61,7 @@ def recommend_food(req: RecommendRequest):
         meal_specific_df = data_service.filter_foods_by_preferences(
             categories=cats, ingredients=ings, target_meal=clean_meal_name,
             dataset=food_df, negative_keywords=negative_keywords if apply_ai_keywords else [],
+            halal_only=req.halal_only if req.halal_only else False,
         )
 
         meal_datasets[meal_key] = meal_specific_df
@@ -80,6 +81,9 @@ def recommend_food(req: RecommendRequest):
                 calories_100g=r['calories_100g'],
                 ideal_grams=r['ideal_grams'],
                 ideal_calories=r['ideal_calories'],
+                ideal_protein=r.get('ideal_protein'),
+                ideal_fat=r.get('ideal_fat'),
+                ideal_carb=r.get('ideal_carb'),
                 match_score=r['match_score'],
             )
             for r in meal['recommendations']
