@@ -6,7 +6,8 @@ import os
 # PATHS — Dataset v2 (kolom baru: is_recommendable_food, halal, dsb.)
 # ============================================================
 _BASE_DIR = os.path.dirname(__file__)
-FOOD_DATA_PATH = os.path.join(_BASE_DIR, '..', 'Data', 'train_ready_dataset_v2.csv')
+FOOD_DATA_PATH = os.path.join(_BASE_DIR, '..', 'Data', 'train_ready_dataset_v3.csv')
+FALLBACK_FOOD_DATA_PATH = os.path.join(_BASE_DIR, '..', 'Data', 'train_ready_dataset_v2.csv')
 USER_DATA_PATH = os.path.join(_BASE_DIR, '..', 'Data', 'user_profile_features_schema.csv')
 
 
@@ -40,6 +41,7 @@ ALLERGY_COLS_FOOD = [
 ]
 
 MEAL_SUITABLE_COLS = ['suitable_breakfast', 'suitable_lunch', 'suitable_dinner']
+PAIRING_METADATA_COLS = ['pairing_group', 'pairing_role', 'pairing_notes', 'pairing_suitability_notes']
 
 ENFORCE_HALAL_FILTER_DEFAULT = True
 
@@ -53,7 +55,8 @@ def _load_and_clean_food_data(enforce_halal: bool = ENFORCE_HALAL_FILTER_DEFAULT
       4. Normalisasi kolom alergi & meal suitability
     """
     try:
-        df = pd.read_csv(FOOD_DATA_PATH)
+        path = FOOD_DATA_PATH if os.path.exists(FOOD_DATA_PATH) else FALLBACK_FOOD_DATA_PATH
+        df = pd.read_csv(path)
     except Exception as e:
         print(f"Error loading food CSV: {e}")
         return pd.DataFrame()
@@ -96,6 +99,12 @@ def _load_and_clean_food_data(enforce_halal: bool = ENFORCE_HALAL_FILTER_DEFAULT
         else:
             df[col] = 1  # default cocok semua waktu
 
+    # --- 5b. Pairing metadata v3 ---
+    for col in PAIRING_METADATA_COLS:
+        if col not in df.columns:
+            df[col] = ''
+        df[col] = df[col].fillna('').astype(str).str.strip().str.lower()
+
     # --- 6. Pastikan kolom makro numerik ---
     for col in ['calories_100g', 'protein_100g', 'fat_100g', 'carbohydrate_100g']:
         if col in df.columns:
@@ -103,7 +112,7 @@ def _load_and_clean_food_data(enforce_halal: bool = ENFORCE_HALAL_FILTER_DEFAULT
 
     df = df.reset_index(drop=True)
     removed = before - len(df)
-    print(f"Food data loaded: {len(df)} rows (removed {removed} by v2 guardrails) from {FOOD_DATA_PATH}")
+    print(f"Food data loaded: {len(df)} rows (removed {removed} by guardrails) from {path}")
     return df
 
 

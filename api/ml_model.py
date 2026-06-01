@@ -41,6 +41,13 @@ MEAL_RATIOS = {
 
 DAY_NAMES = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu']
 
+TRADITIONAL_STAPLE_GROUPS = frozenset(['rice_noodle_staple', 'savory_staple'])
+SWEET_STAPLE_GROUPS = frozenset(['sweet_snack', 'bread_staple'])
+TRADITIONAL_PROTEIN_GROUPS = frozenset(['traditional_protein'])
+TRADITIONAL_VEGETABLE_GROUPS = frozenset(['cooked_or_ready_vegetable'])
+DAIRY_PAIRING_GROUPS = frozenset(['dairy_pairing'])
+TOP_PAIRING_CANDIDATES = 24
+
 # ============================================================
 # Load Model
 # ============================================================
@@ -156,6 +163,12 @@ def is_valid_for_role(row: pd.Series, role: str) -> bool:
 
     # Pisah kata untuk word-level matching (hindari substring partial match)
     words = fname_lower.replace('-', ' ').split()
+    is_recommendable = str(row.get('is_recommendable_food', 'true')).lower().strip()
+    pairing_group = str(row.get('pairing_group', '')).lower().strip()
+    pairing_role = str(row.get('pairing_role', '')).lower().strip()
+
+    if is_recommendable in ('false', '0', '0.0'):
+        return False
 
     # ── 1. Global Rejections ─────────────────────────────────
     # Reject kategori yang bukan makanan siap santap
@@ -174,6 +187,25 @@ def is_valid_for_role(row: pd.Series, role: str) -> bool:
     if cook_cat == 'mentah_segar' and role in ('Complete', 'Karbo', 'Lauk'):
         return False
 
+    # Dataset v3 adds explicit meal-pairing metadata. Prefer it when available
+    # so categories such as bread/snack/dairy cannot leak into main-meal combos.
+    if pairing_role:
+        if role == 'Complete':
+            return pairing_role == 'complete' and pairing_group == 'complete_menu' and cal >= 80 and prot >= 5 and carb >= 10
+        if role == 'Karbo':
+            return pairing_role == 'staple' and pairing_group in TRADITIONAL_STAPLE_GROUPS and carb > fat * 1.2
+        if role == 'Sweet':
+            return (
+                (pairing_role == 'sweet_snack' and pairing_group == 'sweet_snack')
+                or (pairing_role == 'staple' and pairing_group == 'bread_staple')
+            ) and cal > 0
+        if role == 'Dairy':
+            return pairing_role == 'dairy' and pairing_group in DAIRY_PAIRING_GROUPS and cal > 0
+        if role == 'Lauk':
+            return pairing_role == 'protein' and pairing_group in TRADITIONAL_PROTEIN_GROUPS and prot >= 8.0
+        if role == 'Sayur':
+            return pairing_role == 'vegetable' and pairing_group in TRADITIONAL_VEGETABLE_GROUPS and cal <= 300.0 and fat <= 25.0
+
     # ── 2. Complete (Hidangan Lengkap / One-dish meal) ───────
     is_complete_by_name = any(c in fname_lower for c in _COMPLETE_NAMES)
     is_complete_by_cat = ('berkuah' in cat_lower)
@@ -182,7 +214,7 @@ def is_valid_for_role(row: pd.Series, role: str) -> bool:
         if not (is_complete_by_cat or is_complete_by_name):
             return False
         # Complete meal harus punya nutrisi yang cukup beragam
-        return cal >= 80 and (prot >= 3 or carb >= 10)
+        return cal >= 80 and prot >= 5 and carb >= 10
 
     # Jika makanan ini adalah hidangan lengkap, jangan jadikan komponen
     if is_complete_by_cat or is_complete_by_name:
@@ -317,6 +349,57 @@ def _build_meal_suitable_mask(filtered_food_df: pd.DataFrame, meal_type: str) ->
     return col.astype(bool).values
 
 
+def _row_pairing_group(row: pd.Series) -> str:
+    return str(row.get('pairing_group', '')).lower().strip()
+
+
+def _is_traditional_combo_compatible(karbo_row: pd.Series, lauk_row: pd.Series, sayur_row: pd.Series) -> bool:
+    return (
+        _row_pairing_group(karbo_row) in TRADITIONAL_STAPLE_GROUPS
+        and _row_pairing_group(lauk_row) in TRADITIONAL_PROTEIN_GROUPS
+        and _row_pairing_group(sayur_row) in TRADITIONAL_VEGETABLE_GROUPS
+    )
+
+
+def _is_sweet_combo_compatible(sweet_row: pd.Series, dairy_row: pd.Series, meal_type: str) -> bool:
+    if meal_type != 'breakfast':
+        return False
+    return _row_pairing_group(sweet_row) in SWEET_STAPLE_GROUPS and _row_pairing_group(dairy_row) in DAIRY_PAIRING_GROUPS
+
+
+def _best_traditional_combo(k_cands: list, l_cands: list, s_cands: list) -> Optional[Dict[str, tuple]]:
+    best_combo, best_score = None, -np.inf
+    for karbo in k_cands[:TOP_PAIRING_CANDIDATES]:
+        for lauk in l_cands[:TOP_PAIRING_CANDIDATES]:
+            if karbo[1] == lauk[1]:
+                continue
+            for sayur in s_cands[:TOP_PAIRING_CANDIDATES]:
+                if sayur[1] in (karbo[1], lauk[1]):
+                    continue
+                if not _is_traditional_combo_compatible(karbo[3], lauk[3], sayur[3]):
+                    continue
+                score = (karbo[2] + lauk[2] + sayur[2]) / 3
+                if score > best_score:
+                    best_score = score
+                    best_combo = {'Karbo': karbo, 'Lauk': lauk, 'Sayur': sayur, '_score': score}
+    return best_combo
+
+
+def _best_sweet_combo(sweet_cands: list, dairy_cands: list, meal_type: str) -> Optional[Dict[str, tuple]]:
+    best_combo, best_score = None, -np.inf
+    for sweet in sweet_cands[:TOP_PAIRING_CANDIDATES]:
+        for dairy in dairy_cands[:TOP_PAIRING_CANDIDATES]:
+            if sweet[1] == dairy[1]:
+                continue
+            if not _is_sweet_combo_compatible(sweet[3], dairy[3], meal_type):
+                continue
+            score = (sweet[2] + dairy[2]) / 2
+            if score > best_score:
+                best_score = score
+                best_combo = {'Camilan/Roti': sweet, 'Pendamping': dairy, '_score': score}
+    return best_combo
+
+
 # ============================================================
 # Combo Meal Recommendation
 # ============================================================
@@ -348,13 +431,17 @@ def get_combo_meal_recommendations(
     target_k = [target_macros[0] * 0.45, target_macros[1] * 0.10, target_macros[2] * 0.10, target_macros[3] * 0.60]
     target_l = [target_macros[0] * 0.40, target_macros[1] * 0.75, target_macros[2] * 0.70, target_macros[3] * 0.10]
     target_s = [target_macros[0] * 0.15, target_macros[1] * 0.15, target_macros[2] * 0.20, target_macros[3] * 0.30]
+    target_sweet = [target_macros[0] * 0.65, target_macros[1] * 0.25, target_macros[2] * 0.35, target_macros[3] * 0.75]
+    target_dairy = [target_macros[0] * 0.35, target_macros[1] * 0.45, target_macros[2] * 0.35, target_macros[3] * 0.25]
 
     scores_full = predict_scores(target_macros)
     scores_k = predict_scores(target_k)
     scores_l = predict_scores(target_l)
     scores_s = predict_scores(target_s)
+    scores_sweet = predict_scores(target_sweet)
+    scores_dairy = predict_scores(target_dairy)
 
-    full_cands, k_cands, l_cands, s_cands = [], [], [], []
+    full_cands, k_cands, l_cands, s_cands, sweet_cands, dairy_cands = [], [], [], [], [], []
 
     for i in range(num_foods):
         if has_allergy[i] or not suitable_mask[i]:
@@ -368,10 +455,14 @@ def get_combo_meal_recommendations(
 
         penalty = variety_penalty if fname in used_foods else 0
 
-        # Strict categorization: setiap makanan hanya masuk SATU role
-        # Prioritas: Complete > Karbo > Lauk > Sayur
+        # Strict categorization: setiap makanan hanya masuk SATU role.
+        # Priority: complete menu, sweet breakfast pair, then traditional components.
         if is_valid_for_role(row, 'Complete'):
             full_cands.append((i, fname, scores_full[i] - penalty, row))
+        elif is_valid_for_role(row, 'Sweet'):
+            sweet_cands.append((i, fname, scores_sweet[i] - penalty, row))
+        elif is_valid_for_role(row, 'Dairy'):
+            dairy_cands.append((i, fname, scores_dairy[i] - penalty, row))
         elif is_valid_for_role(row, 'Karbo'):
             k_cands.append((i, fname, scores_k[i] - penalty, row))
         elif is_valid_for_role(row, 'Lauk'):
@@ -383,25 +474,33 @@ def get_combo_meal_recommendations(
     k_cands.sort(key=lambda x: x[2], reverse=True)
     l_cands.sort(key=lambda x: x[2], reverse=True)
     s_cands.sort(key=lambda x: x[2], reverse=True)
-
-    # Tentukan apakah pakai Complete atau Combo
-    use_combo = True
-    best_full_score = full_cands[0][2] if full_cands else -1
-    avg_combo_score = -1
-
-    if k_cands and l_cands and s_cands:
-        avg_combo_score = (k_cands[0][2] + l_cands[0][2] + s_cands[0][2]) / 3
-
-    if full_cands and (best_full_score > avg_combo_score * 0.95 or not k_cands or not l_cands):
-        use_combo = False
+    sweet_cands.sort(key=lambda x: x[2], reverse=True)
+    dairy_cands.sort(key=lambda x: x[2], reverse=True)
 
     result = {}
-    if not use_combo and full_cands:
-        best = full_cands[0]
-        grams = (target_macros[0] / float(best[3].get('calories_100g', 1))) * 100
-        grams = min(max(grams, 200), 600)
+    traditional_combo = _best_traditional_combo(k_cands, l_cands, s_cands)
+    sweet_combo = _best_sweet_combo(sweet_cands, dairy_cands, meal_type)
+    best_full = full_cands[0] if full_cands else None
 
-        result['Makanan Utama'] = {
+    options = []
+    if best_full:
+        options.append(('full', best_full[2], best_full))
+    if traditional_combo:
+        options.append(('traditional', traditional_combo['_score'], traditional_combo))
+    if sweet_combo:
+        # Sweet + dairy is intentionally a breakfast-only profile.
+        options.append(('sweet', sweet_combo['_score'], sweet_combo))
+
+    if not options:
+        return result
+
+    selected_type, _, selected = max(options, key=lambda x: x[1])
+
+    def add_item(role: str, best: tuple, target_m: list, min_g: float, max_g: float) -> None:
+        calories_100g = max(float(best[3].get('calories_100g', 1)), 1.0)
+        grams = (target_m[0] / calories_100g) * 100
+        grams = min(max(grams, min_g), max_g)
+        result[role] = {
             'food_name': best[1],
             'calories_100g': float(best[3].get('calories_100g', 0)),
             'grams': float(grams),
@@ -411,28 +510,16 @@ def get_combo_meal_recommendations(
             'carb': float((best[3].get('carbohydrate_100g', 0) / 100) * grams),
             'score': float(best[2]),
         }
-    else:
-        for role, target_m, cands in zip(
-            ['Karbo', 'Lauk', 'Sayur'],
-            [target_k, target_l, target_s],
-            [k_cands, l_cands, s_cands]
-        ):
-            if not cands:
-                continue
-            best = cands[0]
-            grams = (target_m[0] / float(best[3].get('calories_100g', 1))) * 100
-            grams = min(max(grams, 50), 250)
 
-            result[role] = {
-                'food_name': best[1],
-                'calories_100g': float(best[3].get('calories_100g', 0)),
-                'grams': float(grams),
-                'cal': float((best[3].get('calories_100g', 0) / 100) * grams),
-                'prot': float((best[3].get('protein_100g', 0) / 100) * grams),
-                'fat': float((best[3].get('fat_100g', 0) / 100) * grams),
-                'carb': float((best[3].get('carbohydrate_100g', 0) / 100) * grams),
-                'score': float(best[2]),
-            }
+    if selected_type == 'full':
+        add_item('Makanan Utama', selected, target_macros, 120, 500)
+    elif selected_type == 'sweet':
+        add_item('Camilan/Roti', selected['Camilan/Roti'], target_sweet, 40, 180)
+        add_item('Pendamping', selected['Pendamping'], target_dairy, 30, 300)
+    else:
+        add_item('Karbo', selected['Karbo'], target_k, 50, 250)
+        add_item('Lauk', selected['Lauk'], target_l, 50, 250)
+        add_item('Sayur', selected['Sayur'], target_s, 50, 250)
 
     return result
 
@@ -468,7 +555,7 @@ def generate_7day_combo_plan(
             )
 
             recommendations = []
-            for role in ['Makanan Utama', 'Karbo', 'Lauk', 'Sayur']:
+            for role in ['Makanan Utama', 'Camilan/Roti', 'Pendamping', 'Karbo', 'Lauk', 'Sayur']:
                 if role not in combo:
                     continue
                 item = combo[role]
