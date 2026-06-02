@@ -45,7 +45,11 @@ class RecommendRequest(BaseModel):
     halal_only: Optional[bool] = Field(default=False, description="Filter hanya makanan halal candidate")
 
 class FoodRecommendation(BaseModel):
+    food_id: Optional[str] = None
     food_name: str
+    image_url: Optional[str] = None
+    pairing_group: Optional[str] = None
+    pairing_role: Optional[str] = None
     calories_100g: float
     ideal_grams: float
     ideal_calories: float

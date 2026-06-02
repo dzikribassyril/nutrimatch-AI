@@ -77,7 +77,11 @@ def recommend_food(req: RecommendRequest):
     for meal in daily_plan_raw:
         formatted_recs = [
             FoodRecommendation(
+                food_id=r.get('food_id'),
                 food_name=r['food_name'],
+                image_url=r.get('image_url'),
+                pairing_group=r.get('pairing_group'),
+                pairing_role=r.get('pairing_role'),
                 calories_100g=r['calories_100g'],
                 ideal_grams=r['ideal_grams'],
                 ideal_calories=r['ideal_calories'],

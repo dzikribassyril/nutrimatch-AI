@@ -1,1 +1,5 @@
 .env
+archive/
+logs/
+*.pyc
+__pycache__/

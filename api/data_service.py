@@ -6,8 +6,9 @@ import os
 # PATHS — Dataset v2 (kolom baru: is_recommendable_food, halal, dsb.)
 # ============================================================
 _BASE_DIR = os.path.dirname(__file__)
-FOOD_DATA_PATH = os.path.join(_BASE_DIR, '..', 'Data', 'train_ready_dataset_v3.csv')
-FALLBACK_FOOD_DATA_PATH = os.path.join(_BASE_DIR, '..', 'Data', 'train_ready_dataset_v2.csv')
+FOOD_DATA_PATH = os.path.join(_BASE_DIR, '..', 'Data', 'train_ready_dataset_v4.csv')
+FALLBACK_FOOD_DATA_PATH = os.path.join(_BASE_DIR, '..', 'Data', 'train_ready_dataset_v3.csv')
+LEGACY_FOOD_DATA_PATH = os.path.join(_BASE_DIR, '..', 'Data', 'train_ready_dataset_v2.csv')
 USER_DATA_PATH = os.path.join(_BASE_DIR, '..', 'Data', 'user_profile_features_schema.csv')
 
 
@@ -55,7 +56,12 @@ def _load_and_clean_food_data(enforce_halal: bool = ENFORCE_HALAL_FILTER_DEFAULT
       4. Normalisasi kolom alergi & meal suitability
     """
     try:
-        path = FOOD_DATA_PATH if os.path.exists(FOOD_DATA_PATH) else FALLBACK_FOOD_DATA_PATH
+        if os.path.exists(FOOD_DATA_PATH):
+            path = FOOD_DATA_PATH
+        elif os.path.exists(FALLBACK_FOOD_DATA_PATH):
+            path = FALLBACK_FOOD_DATA_PATH
+        else:
+            path = LEGACY_FOOD_DATA_PATH
         df = pd.read_csv(path)
     except Exception as e:
         print(f"Error loading food CSV: {e}")

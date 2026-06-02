@@ -501,7 +501,11 @@ def get_combo_meal_recommendations(
         grams = (target_m[0] / calories_100g) * 100
         grams = min(max(grams, min_g), max_g)
         result[role] = {
+            'food_id': str(best[3].get('food_id', '')),
             'food_name': best[1],
+            'image_url': str(best[3].get('image_url', '')) if best[3].get('image_url') is not None else '',
+            'pairing_group': str(best[3].get('pairing_group', '')),
+            'pairing_role': str(best[3].get('pairing_role', '')),
             'calories_100g': float(best[3].get('calories_100g', 0)),
             'grams': float(grams),
             'cal': float((best[3].get('calories_100g', 0) / 100) * grams),
@@ -560,7 +564,11 @@ def generate_7day_combo_plan(
                     continue
                 item = combo[role]
                 recommendations.append({
+                    'food_id': item.get('food_id'),
                     'food_name': f"[{role}] {item['food_name']}",
+                    'image_url': item.get('image_url'),
+                    'pairing_group': item.get('pairing_group'),
+                    'pairing_role': item.get('pairing_role'),
                     'calories_100g': item['calories_100g'],
                     'ideal_grams': item['grams'],
                     'ideal_calories': item['cal'],
