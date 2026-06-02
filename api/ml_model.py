@@ -87,7 +87,17 @@ _REJECT_ITEM_TYPES_FOR_COMPONENTS = frozenset(['snack', 'drink'])
 # Kata-kata dalam nama yang menandakan bahan mentah / bumbu / bukan makanan siap santap
 _GLOBAL_REJECT_NAMES = frozenset([
     'mentega', 'margarin', 'minyak', 'sirup', 'kaldu', 'gula pasir',
-    'garam', 'dideh', 'ampas',
+    'garam', 'dideh', 'ampas', 'teh hijau', 'teh melati', 'daun kering',
+    'jagung titi', 'katul jagung', 'enting-enting', 'risoles',
+    'bihun goreng instan', 'getuk', 'tapai', 'lupis', 'ongol-ongol',
+    'makaroni',
+])
+
+_RAW_STAPLE_INGREDIENTS = frozenset(['jagung'])
+_RAW_STAPLE_MARKERS = frozenset(['pipil', 'giling', 'kering'])
+_READY_TO_EAT_MARKERS = frozenset([
+    'rebus', 'masak', 'matang', 'goreng', 'bakar', 'kukus', 'tumis',
+    'panggang', 'nasi', 'bubur', 'lontong', 'ketupat',
 ])
 
 # Kata dalam nama yang menandakan makanan BUKAN lauk/sayur yang tepat
@@ -123,8 +133,8 @@ _COMPLETE_NAMES = [
 # ── Keywords untuk identifikasi role via nama ────────────────
 _KARBO_KEYWORDS = frozenset([
     'nasi', 'mie', 'roti', 'pasta', 'kentang', 'umbi', 'singkong', 'ubi',
-    'sereal', 'oat', 'gandum', 'sagu', 'bihun', 'lontong', 'ketupat',
-    'jagung', 'ketan', 'talas', 'oyek',
+    'sereal', 'oat', 'gandum', 'sagu', 'bihun', 'lontong', 'ketupat', 
+    'ketan', 'talas', 'oyek',
 ])
 
 _LAUK_KEYWORDS = frozenset([
@@ -140,6 +150,83 @@ _SAYUR_KEYWORDS = frozenset([
     'timun', 'mentimun', 'kacang panjang', 'buncis', 'tauge', 'toge',
     'daun', 'rebung', 'jengkol', 'petai',
 ])
+
+_PRIMARY_RICE_NAMES = frozenset([
+    'nasi',
+    'nasi putih',
+    'beras giling masak nasi',
+])
+
+_SECONDARY_RICE_NAMES = frozenset([
+    'nasi beras merah',
+])
+
+_COMMON_READY_STAPLE_PHRASES = frozenset([
+    'jagung rebus',
+    'jagung muda rebus',
+    'jagung kuning pipil rebus',
+    'singkong kukus',
+    'singkong goreng',
+    'ubi jalar rebus',
+    'ubi jalar kuning kukus',
+    'ubi jalar tinta kemayung kukus',
+    'talas kukus',
+    'talas bogor kukus',
+    'ketela pohonsingkong kukus',
+    'ketupat ketan',
+    'bihun goreng',
+])
+
+
+def _has_raw_staple_name(food_name: str) -> bool:
+    name = str(food_name).lower().strip()
+    if any(marker in name for marker in _READY_TO_EAT_MARKERS):
+        return False
+    return (
+        any(ingredient in name for ingredient in _RAW_STAPLE_INGREDIENTS)
+        and any(marker in name for marker in _RAW_STAPLE_MARKERS)
+    )
+
+
+def _karbo_priority_adjustment(row: pd.Series) -> float:
+    fname_lower = str(row.get('food_name', '')).lower().strip()
+    pairing_group = str(row.get('pairing_group', '')).lower().strip()
+
+    if fname_lower in _PRIMARY_RICE_NAMES:
+        return 0.30
+    if fname_lower in _SECONDARY_RICE_NAMES:
+        return 0.20
+    if any(phrase in fname_lower for phrase in _COMMON_READY_STAPLE_PHRASES):
+        return 0.25
+    if pairing_group == 'rice_noodle_staple':
+        return 0.10
+    return 0.0
+
+
+def _is_rice_family(row: pd.Series) -> bool:
+    fname_lower = str(row.get('food_name', '')).lower().strip()
+    main_ingredient = str(row.get('main_ingredient', '')).lower().strip()
+    return (
+        fname_lower in _PRIMARY_RICE_NAMES
+        or fname_lower in _SECONDARY_RICE_NAMES
+        or fname_lower.startswith('nasi ')
+        or main_ingredient == 'beras'
+    )
+
+
+def _karbo_variety_penalty(row: pd.Series, used_foods: set) -> float:
+    if not _is_rice_family(row):
+        return 0.0
+
+    used_lower = {str(food).lower().strip() for food in used_foods}
+    rice_already_used = any(
+        food in _PRIMARY_RICE_NAMES
+        or food in _SECONDARY_RICE_NAMES
+        or food.startswith('nasi ')
+        or 'beras giling masak nasi' in food
+        for food in used_lower
+    )
+    return 0.35 if rice_already_used else 0.0
 
 
 def is_valid_for_role(row: pd.Series, role: str) -> bool:
@@ -177,6 +264,10 @@ def is_valid_for_role(row: pd.Series, role: str) -> bool:
 
     # Reject nama-nama bahan mentah/bumbu
     if any(reject in fname_lower for reject in _GLOBAL_REJECT_NAMES):
+        return False
+
+    # Reject bahan karbo mentah yang salah label sebagai staple/menu.
+    if _has_raw_staple_name(fname_lower):
         return False
 
     # Zero-calorie atau negatif
@@ -464,7 +555,8 @@ def get_combo_meal_recommendations(
         elif is_valid_for_role(row, 'Dairy'):
             dairy_cands.append((i, fname, scores_dairy[i] - penalty, row))
         elif is_valid_for_role(row, 'Karbo'):
-            k_cands.append((i, fname, scores_k[i] - penalty, row))
+            k_score = scores_k[i] + _karbo_priority_adjustment(row) - penalty - _karbo_variety_penalty(row, used_foods)
+            k_cands.append((i, fname, k_score, row))
         elif is_valid_for_role(row, 'Lauk'):
             l_cands.append((i, fname, scores_l[i] - penalty, row))
         elif is_valid_for_role(row, 'Sayur'):

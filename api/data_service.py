@@ -6,8 +6,8 @@ import os
 # PATHS — Dataset v2 (kolom baru: is_recommendable_food, halal, dsb.)
 # ============================================================
 _BASE_DIR = os.path.dirname(__file__)
-FOOD_DATA_PATH = os.path.join(_BASE_DIR, '..', 'Data', 'train_ready_dataset_v4.csv')
-FALLBACK_FOOD_DATA_PATH = os.path.join(_BASE_DIR, '..', 'Data', 'train_ready_dataset_v3.csv')
+FOOD_DATA_PATH = os.path.join(_BASE_DIR, '..', 'Data', 'train_ready_dataset_v5.csv')
+FALLBACK_FOOD_DATA_PATH = os.path.join(_BASE_DIR, '..', 'Data', 'train_ready_dataset_v4.csv')
 LEGACY_FOOD_DATA_PATH = os.path.join(_BASE_DIR, '..', 'Data', 'train_ready_dataset_v2.csv')
 USER_DATA_PATH = os.path.join(_BASE_DIR, '..', 'Data', 'user_profile_features_schema.csv')
 
@@ -46,6 +46,41 @@ PAIRING_METADATA_COLS = ['pairing_group', 'pairing_role', 'pairing_notes', 'pair
 
 ENFORCE_HALAL_FILTER_DEFAULT = True
 
+# Runtime quarantine for known dataset regressions. These are beverages or dry
+# ingredients that can be mislabeled as sayuran/menu in newer CSV versions.
+_NON_RECOMMENDABLE_NAME_PATTERNS = (
+    'teh hijau',
+    'teh melati',
+    'daun kering',
+    'jagung titi',
+    'katul jagung',
+    'enting-enting',
+    'risoles',
+    'bihun goreng instan',
+    'getuk',
+    'tapai',
+    'lupis',
+    'ongol-ongol',
+    'makaroni',
+)
+
+_RAW_STAPLE_INGREDIENTS = ('jagung',)
+_RAW_STAPLE_MARKERS = ('pipil', 'giling', 'kering')
+_READY_TO_EAT_MARKERS = (
+    'rebus', 'masak', 'matang', 'goreng', 'bakar', 'kukus', 'tumis',
+    'panggang', 'nasi', 'bubur', 'lontong', 'ketupat',
+)
+
+
+def _has_raw_staple_name(food_name: str) -> bool:
+    name = str(food_name).lower().strip()
+    if any(marker in name for marker in _READY_TO_EAT_MARKERS):
+        return False
+    return (
+        any(ingredient in name for ingredient in _RAW_STAPLE_INGREDIENTS)
+        and any(marker in name for marker in _RAW_STAPLE_MARKERS)
+    )
+
 
 def _load_and_clean_food_data(enforce_halal: bool = ENFORCE_HALAL_FILTER_DEFAULT) -> pd.DataFrame:
     """
@@ -73,6 +108,14 @@ def _load_and_clean_food_data(enforce_halal: bool = ENFORCE_HALAL_FILTER_DEFAULT
     if 'is_recommendable_food' in df.columns:
         df['is_recommendable_food'] = _normalize_bool_col(df['is_recommendable_food'], default=True)
         df = df[df['is_recommendable_food']]
+
+    if 'food_name' in df.columns:
+        food_name_lower = df['food_name'].fillna('').astype(str).str.lower()
+        known_bad_name = pd.Series(False, index=df.index)
+        for pattern in _NON_RECOMMENDABLE_NAME_PATTERNS:
+            known_bad_name = known_bad_name | food_name_lower.str.contains(pattern, regex=False)
+        raw_staple_name = df['food_name'].apply(_has_raw_staple_name)
+        df = df[~(known_bad_name | raw_staple_name)]
 
     # --- 2. ingredient_only / raw_ingredient ---
     for flag_col in ['ingredient_only_flag', 'raw_ingredient_flag']:
