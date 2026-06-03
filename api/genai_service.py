@@ -6,7 +6,6 @@ from google import genai
 
 # Setup Gemini API Key
 API_KEY = os.getenv("GEMINI_API_KEY", "") 
-
 if API_KEY:
     client = genai.Client(api_key=API_KEY)
 else:
@@ -22,14 +21,18 @@ def extract_food_preference(user_text: str) -> ExtractedPreferences:
     prompt = f"""
     Ekstrak informasi dari teks pengguna mengenai preferensi makanan.
     Fokus pada:
-    1. keywords: jenis makanan utama, bahan dasar, atau kategori yang diinginkan (misal: "ayam", "berkuah", "pedas").
-    2. negative_keywords: jenis makanan atau bahan yang TIDAK diinginkan atau dilarang (misal kata kunci setelah kata "jangan", "tanpa", "bukan", contoh: "goreng", "santan"). Selalu gunakan kata dasar (misal: "digoreng" menjadi "goreng", "direbus" menjadi "rebus").
-    3. target_meal: Jika ada penyebutan waktu makan yang spesifik, pilih dari: "Sarapan", "Makan Siang", "Makan Malam". Jika tidak ada, biarkan null.
+    1. categories: kategori makanan yang diinginkan seperti "berkuah","buah","gorengan","karbohidrat_pokok", "lauk_hewani", "lauk_nabati",  "minuman_susu","sayuran","snack_dessert", jika tidak ada seperti yang saya bilang sebelumnya, beri label "lainnya"
+    2. ingredients: bahan utama seperti "ayam", "babi", "beras",  "buah", "ikan","kacang","kambing","kedelai","sapi","sayuran","seafood","singkong","susu","telur","terigu", jika tidak ada seperti yang saya bilang sebelumnya, beri label "other"
+    3. keywords: jenis makanan lain yang bukan kategori/ingredient
+    4. negative_keywords: jenis makanan atau bahan yang TIDAK diinginkan atau dilarang (misal kata kunci setelah kata "jangan", "tanpa", "bukan", contoh: "goreng", "santan"). Selalu gunakan kata dasar (misal: "digoreng" menjadi "goreng", "direbus" menjadi "rebus").
+    5. target_meal: Jika ada penyebutan waktu makan yang spesifik, pilih dari: "Sarapan", "Makan Siang", "Makan Malam". Jika tidak ada, biarkan null.
 
     Kembalikan HANYA format JSON berikut, tanpa markdown, tanpa teks lain:
     {{
-        "keywords": ["kata1", "kata2"],
-        "negative_keywords": ["kata3", "kata4"],
+        "categories": ["berkuah"],
+        "ingredients": ["ayam"],
+        "keywords": [],
+        "negative_keywords": [],
         "target_meal": "Makan Siang"
     }}
 

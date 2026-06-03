@@ -16,17 +16,21 @@ def read_root():
 
 @app.post("/api/recommend", response_model=RecommendResponse)
 def recommend_food(req: RecommendRequest):
+    extracted_cats = []
+    extracted_ings = []
     extracted_keywords = []
     negative_keywords = []
     target_meal_from_ai = None
     
     if req.user_text:
         extracted_prefs = genai_service.extract_food_preference(req.user_text)
+        extracted_cats = extracted_prefs.categories
+        extracted_ings = extracted_prefs.ingredients
         extracted_keywords = extracted_prefs.keywords
         negative_keywords = extracted_prefs.negative_keywords
         target_meal_from_ai = extracted_prefs.target_meal
         
-    print(f"Gen AI Extracted: Keywords={extracted_keywords}, Negatives={negative_keywords}, Target Meal={target_meal_from_ai}")
+    print(f"Gen AI Extracted:Food Category={extracted_cats},Ingredients={extracted_ings} ,Keywords={extracted_keywords}, Negatives={negative_keywords}, Target Meal={target_meal_from_ai}")
     
     food_df = data_service.get_food_data()
     if food_df.empty:
@@ -55,7 +59,8 @@ def recommend_food(req: RecommendRequest):
             apply_ai_keywords = False
 
         if apply_ai_keywords:
-            ings = ings + extracted_keywords
+            cats = cats + extracted_cats  # ← Tambah kategori dari AI
+            ings = ings + extracted_ings  # ← Tambah ingredients dari AI
 
         clean_meal_name = meal_label.split(' (')[0]
         meal_specific_df = data_service.filter_foods_by_preferences(

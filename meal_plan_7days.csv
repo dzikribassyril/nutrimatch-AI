@@ -1,43 +1,43 @@
 hari_ke,hari,tanggal,sesi,opsi,makanan,porsi_gram,protein_g,lemak_g,karbo_g,match_score_%
-1,Senin,2026-06-01,Sarapan Pagi (25%),1,Bagea Kelapa Asin,100.0,3.2,13.9,78.1,87.5
-1,Senin,2026-06-01,Sarapan Pagi (25%),2,Telur Terubuk,105.9,32.8,29.6,10.6,87.26
-1,Senin,2026-06-01,Makan Siang (40%),1,Ikan Asin Pepetek Goreng,110.4,44.6,60.0,0.0,94.42
-1,Senin,2026-06-01,Makan Siang (40%),2,Biji Jambu Mete Goreng,114.5,24.6,64.8,22.7,93.91
-1,Senin,2026-06-01,Makan Malam (35%),1,Ikan Mujair Dendeng Goreng,105.4,78.3,28.3,9.7,94.03
-1,Senin,2026-06-01,Makan Malam (35%),2,Biji Jambu Mete Goreng,100.2,21.5,56.7,19.8,93.93
-2,Selasa,2026-06-02,Sarapan Pagi (25%),1,Telur Terubuk,105.9,32.8,29.6,10.6,87.26
-2,Selasa,2026-06-02,Sarapan Pagi (25%),2,Ledre Pisang,111.1,5.3,5.7,94.3,85.63
-2,Selasa,2026-06-02,Makan Siang (40%),1,Biji Jambu Mete Goreng,114.5,24.6,64.8,22.7,93.91
-2,Selasa,2026-06-02,Makan Siang (40%),2,Kacang Metebiji Jambu Monyet Goreng,114.5,23.4,64.4,22.7,93.83
-2,Selasa,2026-06-02,Makan Malam (35%),1,Kacang Metebiji Jambu Monyet Goreng,100.2,20.4,56.4,19.8,93.85
-2,Selasa,2026-06-02,Makan Malam (35%),2,Kacang Metebiji Jambu Monyet Segar,102.3,16.7,49.5,29.4,93.15
-3,Rabu,2026-06-03,Sarapan Pagi (25%),1,Ledre Pisang,111.1,5.3,5.7,94.3,85.63
-3,Rabu,2026-06-03,Sarapan Pagi (25%),2,Pisang Siam Goreng,72.0,0.7,0.0,5.8,84.81
-3,Rabu,2026-06-03,Makan Siang (40%),1,Kacang Metebiji Jambu Monyet Segar,116.9,19.1,56.6,33.5,93.14
-3,Rabu,2026-06-03,Makan Siang (40%),2,Keju Kacang Tanah,122.0,32.9,59.8,25.5,93.05
-3,Rabu,2026-06-03,Makan Malam (35%),1,Keju Kacang Tanah,106.8,28.8,52.3,22.3,93.11
-3,Rabu,2026-06-03,Makan Malam (35%),2,Noga Kacang Tanah,105.0,14.7,43.8,44.1,92.74
-4,Kamis,2026-06-04,Sarapan Pagi (25%),1,Pisang Siam Goreng,72.0,0.7,0.0,5.8,84.81
-4,Kamis,2026-06-04,Sarapan Pagi (25%),2,Telur Ayam Ceplok,117.5,17.7,38.7,9.8,84.53
-4,Kamis,2026-06-04,Makan Siang (40%),1,Noga Kacang Tanah,120.0,16.8,50.0,50.4,92.73
-4,Kamis,2026-06-04,Makan Siang (40%),2,Kacang Tanah Sangan Berselaput,126.5,36.4,61.2,20.0,92.5
-4,Kamis,2026-06-04,Makan Malam (35%),1,Kacang Tanah Sangan Berselaput,110.7,31.9,53.6,17.5,92.58
-4,Kamis,2026-06-04,Makan Malam (35%),2,Biji Jambu Mete,112.1,23.8,55.6,26.5,92.37
-5,Jumat,2026-06-05,Sarapan Pagi (25%),1,Telur Ayam Ceplok,117.5,17.7,38.7,9.8,84.53
-5,Jumat,2026-06-05,Sarapan Pagi (25%),2,Jagung Titi,120.3,11.3,2.6,95.2,84.35
-5,Jumat,2026-06-05,Makan Siang (40%),1,Biji Jambu Mete,128.1,27.2,63.5,30.2,92.3
-5,Jumat,2026-06-05,Makan Siang (40%),2,Kacang Tanah Goreng,127.7,32.6,56.7,32.6,92.28
-5,Jumat,2026-06-05,Makan Malam (35%),1,Kacang Tanah Goreng,111.7,28.5,49.6,28.5,92.35
-5,Jumat,2026-06-05,Makan Malam (35%),2,Kacang Tanah Kacang Sari,112.3,28.6,49.2,29.2,92.26
-6,Sabtu,2026-06-06,Sarapan Pagi (25%),1,Jagung Titi,120.3,11.3,2.6,95.2,84.35
-6,Sabtu,2026-06-06,Sarapan Pagi (25%),2,Ulat Sagu Panggang,118.4,14.1,35.9,17.6,84.11
-6,Sabtu,2026-06-06,Makan Siang (40%),1,Kue Kelapa,121.8,6.8,51.3,57.9,92.27
-6,Sabtu,2026-06-06,Makan Siang (40%),2,Kacang Tanah Kacang Sari,128.3,32.7,56.2,33.4,92.19
-6,Sabtu,2026-06-06,Makan Malam (35%),1,Kacang Tanah Kacang Sari,112.3,28.6,49.2,29.2,92.26
-6,Sabtu,2026-06-06,Makan Malam (35%),2,Kacang Tanah Sari,112.3,28.6,49.2,29.2,92.26
-7,Minggu,2026-06-07,Sarapan Pagi (25%),1,Ulat Sagu Panggang,118.4,14.1,35.9,17.6,84.11
-7,Minggu,2026-06-07,Sarapan Pagi (25%),2,Jagung Kuning Giling,124.7,10.8,5.6,90.2,83.62
-7,Minggu,2026-06-07,Makan Siang (40%),1,Kacang Tanah Sari,128.3,32.7,56.2,33.4,92.19
-7,Minggu,2026-06-07,Makan Siang (40%),2,Kacang Tanah Sangan Tanpa Selaput,128.8,34.6,56.9,30.4,92.17
-7,Minggu,2026-06-07,Makan Malam (35%),1,Kacang Tanah Sangan Tanpa Selaput,112.7,30.3,49.8,26.6,92.25
-7,Minggu,2026-06-07,Makan Malam (35%),2,Kripik Tempe Goreng,116.2,46.8,49.3,13.4,92.17
+1,Kamis,2026-06-04,Sarapan Pagi (25%),1,Bagea Kelapa Asin,100.0,3.2,13.9,78.1,89.32
+1,Kamis,2026-06-04,Sarapan Pagi (25%),2,Telur Terubuk,105.9,32.8,29.6,10.6,87.5
+1,Kamis,2026-06-04,Makan Siang (40%),1,Ikan Asin Pepetek Goreng,110.4,44.6,60.0,0.0,95.47
+1,Kamis,2026-06-04,Makan Siang (40%),2,Biji Jambu Mete Goreng,114.5,24.6,64.8,22.7,95.14
+1,Kamis,2026-06-04,Makan Malam (35%),1,Biji Jambu Mete Goreng,100.2,21.5,56.7,19.8,95.17
+1,Kamis,2026-06-04,Makan Malam (35%),2,Kacang Metebiji Jambu Monyet Goreng,100.2,20.4,56.4,19.8,95.1
+2,Jumat,2026-06-05,Sarapan Pagi (25%),1,Telur Terubuk,105.9,32.8,29.6,10.6,87.5
+2,Jumat,2026-06-05,Sarapan Pagi (25%),2,Ledre Pisang,111.1,5.3,5.7,94.3,87.32
+2,Jumat,2026-06-05,Makan Siang (40%),1,Kacang Metebiji Jambu Monyet Goreng,114.5,23.4,64.4,22.7,95.07
+2,Jumat,2026-06-05,Makan Siang (40%),2,Ikan Mujair Dendeng Goreng,120.4,89.5,32.4,11.1,94.69
+2,Jumat,2026-06-05,Makan Malam (35%),1,Ikan Mujair Dendeng Goreng,105.4,78.3,28.3,9.7,94.81
+2,Jumat,2026-06-05,Makan Malam (35%),2,Kacang Metebiji Jambu Monyet Segar,102.3,16.7,49.5,29.4,94.52
+3,Sabtu,2026-06-06,Sarapan Pagi (25%),1,Ledre Pisang,111.1,5.3,5.7,94.3,87.32
+3,Sabtu,2026-06-06,Sarapan Pagi (25%),2,Pisang Siam Goreng,72.0,0.7,0.0,5.8,86.91
+3,Sabtu,2026-06-06,Makan Siang (40%),1,Kacang Metebiji Jambu Monyet Segar,116.9,19.1,56.6,33.5,94.49
+3,Sabtu,2026-06-06,Makan Siang (40%),2,Keju Kacang Tanah,122.0,32.9,59.8,25.5,94.24
+3,Sabtu,2026-06-06,Makan Malam (35%),1,Keju Kacang Tanah,106.8,28.8,52.3,22.3,94.3
+3,Sabtu,2026-06-06,Makan Malam (35%),2,Noga Kacang Tanah,105.0,14.7,43.8,44.1,94.2
+4,Minggu,2026-06-07,Sarapan Pagi (25%),1,Pisang Siam Goreng,72.0,0.7,0.0,5.8,86.91
+4,Minggu,2026-06-07,Sarapan Pagi (25%),2,Jagung Titi,120.3,11.3,2.6,95.2,85.65
+4,Minggu,2026-06-07,Makan Siang (40%),1,Noga Kacang Tanah,120.0,16.8,50.0,50.4,94.15
+4,Minggu,2026-06-07,Makan Siang (40%),2,Kue Kelapa,121.8,6.8,51.3,57.9,93.8
+4,Minggu,2026-06-07,Makan Malam (35%),1,Kue Kelapa,106.6,6.0,44.9,50.6,93.85
+4,Minggu,2026-06-07,Makan Malam (35%),2,Kacang Tanah Sangan Berselaput,110.7,31.9,53.6,17.5,93.71
+5,Senin,2026-06-08,Sarapan Pagi (25%),1,Jagung Titi,120.3,11.3,2.6,95.2,85.65
+5,Senin,2026-06-08,Sarapan Pagi (25%),2,Sagu Rendang,123.6,0.1,0.2,111.9,84.88
+5,Senin,2026-06-08,Makan Siang (40%),1,Kacang Tanah Sangan Berselaput,126.5,36.4,61.2,20.0,93.63
+5,Senin,2026-06-08,Makan Siang (40%),2,Biji Jambu Mete,128.1,27.2,63.5,30.2,93.52
+5,Senin,2026-06-08,Makan Malam (35%),1,Biji Jambu Mete,112.1,23.8,55.6,26.5,93.6
+5,Senin,2026-06-08,Makan Malam (35%),2,Kacang Tanah Goreng,111.7,28.5,49.6,28.5,93.56
+6,Selasa,2026-06-09,Sarapan Pagi (25%),1,Sagu Rendang,123.6,0.1,0.2,111.9,84.88
+6,Selasa,2026-06-09,Sarapan Pagi (25%),2,Jagung Kuning Giling,124.7,10.8,5.6,90.2,84.69
+6,Selasa,2026-06-09,Makan Siang (40%),1,Kacang Tanah Goreng,127.7,32.6,56.7,32.6,93.48
+6,Selasa,2026-06-09,Makan Siang (40%),2,Kacang Tanah Kacang Sari,128.3,32.7,56.2,33.4,93.39
+6,Selasa,2026-06-09,Makan Malam (35%),1,Kacang Tanah Kacang Sari,112.3,28.6,49.2,29.2,93.48
+6,Selasa,2026-06-09,Makan Malam (35%),2,Kacang Tanah Sari,112.3,28.6,49.2,29.2,93.48
+7,Rabu,2026-06-10,Sarapan Pagi (25%),1,Jagung Kuning Giling,124.7,10.8,5.6,90.2,84.69
+7,Rabu,2026-06-10,Sarapan Pagi (25%),2,Jagung Putih Giling,124.7,10.8,5.6,90.2,84.69
+7,Rabu,2026-06-10,Makan Siang (40%),1,Kacang Tanah Sari,128.3,32.7,56.2,33.4,93.39
+7,Rabu,2026-06-10,Makan Siang (40%),2,Kacang Tanah Sangan Tanpa Selaput,128.8,34.6,56.9,30.4,93.34
+7,Rabu,2026-06-10,Makan Malam (35%),1,Kacang Tanah Sangan Tanpa Selaput,112.7,30.3,49.8,26.6,93.43
+7,Rabu,2026-06-10,Makan Malam (35%),2,Kripik Tempe Goreng,116.2,46.8,49.3,13.4,93.11

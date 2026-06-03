@@ -2,6 +2,8 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 
 class ExtractedPreferences(BaseModel):
+    categories: List[str] = Field(default=[], description="Extracted keywords from user text")
+    ingredients: List[str] = Field(default=[], description="Extracted keywords from user text")
     keywords: List[str] = Field(default=[], description="Extracted keywords from user text")
     negative_keywords: List[str] = Field(default=[], description="Keywords the user explicitly wants to avoid")
     target_meal: Optional[str] = Field(default=None, description="Specific meal target: Sarapan, Makan Siang, or Makan Malam")

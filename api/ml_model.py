@@ -129,6 +129,18 @@ _COMPLETE_NAMES = [
     'pecel', 'rawon', 'rendang', 'opor', 'gulai', 'semur',
     'cap cay', 'capcay', 'tongseng', 'karedok',
 ]
+# Tambahkan konstanta baru di bagian atas bersama konstanta lainnya
+_SUPER_PRIORITY_RICE_NAMES = frozenset([
+    'nasi',
+    'nasi putih',
+    'beras giling masak nasi',
+    'nasi merah',
+    'nasi beras merah',
+])
+
+_PRIORITY_NOODLE_KEYWORDS = frozenset([
+    'mie', 'bihun', 'kwetiau', 'misoa'
+])
 
 # ── Keywords untuk identifikasi role via nama ────────────────
 _KARBO_KEYWORDS = frozenset([
@@ -188,18 +200,27 @@ def _has_raw_staple_name(food_name: str) -> bool:
     )
 
 
+
 def _karbo_priority_adjustment(row: pd.Series) -> float:
     fname_lower = str(row.get('food_name', '')).lower().strip()
     pairing_group = str(row.get('pairing_group', '')).lower().strip()
+    words = fname_lower.replace('-', ' ').split()
 
-    if fname_lower in _PRIMARY_RICE_NAMES:
-        return 0.30
-    if fname_lower in _SECONDARY_RICE_NAMES:
-        return 0.20
+    # 1. Prioritas Utama: Keluarga Nasi (Putih / Merah)
+    if fname_lower in _SUPER_PRIORITY_RICE_NAMES or any(fname_lower.startswith(n + ' ') for n in ['nasi', 'nasi merah']):
+        return 2.5  # Masif bonus untuk memastikan nasi berada di top candidates
+        
+    # 2. Prioritas Kedua: Keluarga Mie dan Bihun
+    if any(k in words for k in _PRIORITY_NOODLE_KEYWORDS) or 'mie' in fname_lower or 'bihun' in fname_lower:
+        return 2.0  # Bonus kuat untuk mie/bihun siap santap
+
+    # 3. Fallback untuk common ready phrases lainnya (singkong rebus, ubi, dll)
     if any(phrase in fname_lower for phrase in _COMMON_READY_STAPLE_PHRASES):
-        return 0.25
+        return 0.5
+        
     if pairing_group == 'rice_noodle_staple':
-        return 0.10
+        return 0.3
+        
     return 0.0
 
 
@@ -284,7 +305,14 @@ def is_valid_for_role(row: pd.Series, role: str) -> bool:
         if role == 'Complete':
             return pairing_role == 'complete' and pairing_group == 'complete_menu' and cal >= 80 and prot >= 5 and carb >= 10
         if role == 'Karbo':
-            return pairing_role == 'staple' and pairing_group in TRADITIONAL_STAPLE_GROUPS and carb > fat * 1.2
+            # Pastikan item dengan pairing_role='staple' tetap disaring agar condong ke basis nasi/mie/bihun
+            # Jika bukan kelompok super priority, naikkan threshold karbohidratnya
+            is_priority_carb = any(n in fname_lower for n in ['nasi', 'mie', 'bihun', 'kwetiau'])
+            base_valid = pairing_role == 'staple' and pairing_group in TRADITIONAL_STAPLE_GROUPS and carb > fat * 1.2
+            if base_valid and not is_priority_carb:
+                # Jika kentang/umbi lolos metadata, pastikan rasionya sangat bersih agar tidak mengalahkan nasi
+                return carb > fat * 2.0 
+            return base_valid
         if role == 'Sweet':
             return (
                 (pairing_role == 'sweet_snack' and pairing_group == 'sweet_snack')
@@ -308,7 +336,7 @@ def is_valid_for_role(row: pd.Series, role: str) -> bool:
         return cal >= 80 and prot >= 5 and carb >= 10
 
     # Jika makanan ini adalah hidangan lengkap, jangan jadikan komponen
-    if is_complete_by_cat or is_complete_by_name:
+    if (is_complete_by_cat or is_complete_by_name) and role not in ('Sweet', 'Dairy'):
         return False
 
     # ── 3. Reject snack & drink untuk komponen utama ─────────
@@ -551,7 +579,8 @@ def get_combo_meal_recommendations(
         if is_valid_for_role(row, 'Complete'):
             full_cands.append((i, fname, scores_full[i] - penalty, row))
         elif is_valid_for_role(row, 'Sweet'):
-            sweet_cands.append((i, fname, scores_sweet[i] - penalty, row))
+            sweet_bonus = 1.5 if meal_type == 'breakfast' else 0.0
+            sweet_cands.append((i, fname, scores_sweet[i] + sweet_bonus - penalty, row))
         elif is_valid_for_role(row, 'Dairy'):
             dairy_cands.append((i, fname, scores_dairy[i] - penalty, row))
         elif is_valid_for_role(row, 'Karbo'):
@@ -586,7 +615,14 @@ def get_combo_meal_recommendations(
     if not options:
         return result
 
-    selected_type, _, selected = max(options, key=lambda x: x[1])
+    options_dict = {opt[0]: opt for opt in options}
+
+    # JIKA BREAKFAST DAN MENU SWEET TERSEDIA, LANGSUNG PILIH SWEET (MUTLAK)
+    if meal_type == 'breakfast' and 'sweet' in options_dict:
+        selected_type, _, selected = options_dict['sweet']
+    else:
+        # Fallback ke scoring tertinggi untuk Lunch & Dinner (atau jika breakfast tidak punya menu sweet)
+        selected_type, _, selected = max(options, key=lambda x: x[1])
 
     def add_item(role: str, best: tuple, target_m: list, min_g: float, max_g: float) -> None:
         calories_100g = max(float(best[3].get('calories_100g', 1)), 1.0)
