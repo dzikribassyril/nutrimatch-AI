@@ -6,7 +6,7 @@ import os
 # PATHS — Dataset v2 (kolom baru: is_recommendable_food, halal, dsb.)
 # ============================================================
 _BASE_DIR = os.path.dirname(__file__)
-FOOD_DATA_PATH = os.path.join(_BASE_DIR, '..', 'Data', 'train_ready_dataset_v6.csv')
+FOOD_DATA_PATH = os.path.join(_BASE_DIR, '..', 'Data', 'train_ready_dataset_v7.csv')
 FALLBACK_FOOD_DATA_PATH = os.path.join(_BASE_DIR, '..', 'Data', 'train_ready_dataset_v5.csv')
 LEGACY_FOOD_DATA_PATH = os.path.join(_BASE_DIR, '..', 'Data', 'train_ready_dataset_v4.csv')
 USER_DATA_PATH = os.path.join(_BASE_DIR, '..', 'Data', 'user_profile_features_schema.csv')
